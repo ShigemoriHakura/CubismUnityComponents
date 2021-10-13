@@ -198,7 +198,6 @@ namespace Live2D.Cubism.Rendering
             }
         }
 
-
         /// <summary>
         /// <see cref="MeshRenderer"/> backing field.
         /// </summary>
@@ -216,6 +215,22 @@ namespace Live2D.Cubism.Rendering
             }
         }
 
+		/// <summary>
+        /// <see cref="MeshCollider"/> backing field.
+        /// </summary>
+        [NonSerialized]
+        private MeshCollider _meshCollider;
+
+		/// <summary>
+        /// <see cref="UnityEngine.MeshCollider"/>.
+        /// </summary>
+        public MeshCollider MeshCollider
+        {
+            get
+            {
+                return _meshCollider;
+            }
+        }
 
 
         #region Interface For CubismRenderController
@@ -342,7 +357,10 @@ namespace Live2D.Cubism.Rendering
 
 
             ResetSwapInfoFlags();
-
+            if (_meshCollider != null)
+            {
+                MeshCollider.sharedMesh = Meshes[BackMesh];
+            }
 
             // Apply swap.
 #if UNITY_EDITOR
@@ -354,7 +372,6 @@ namespace Live2D.Cubism.Rendering
                 return;
             }
 #endif
-
 
             MeshFilter.mesh = mesh;
         }
@@ -368,10 +385,18 @@ namespace Live2D.Cubism.Rendering
             if (LastSwap.DidBecomeVisible)
             {
                 MeshRenderer.enabled = true;
+                if (_meshCollider != null)
+                {
+                    _meshCollider.enabled = true;
+                }
             }
             else if (LastSwap.DidBecomeInvisible)
             {
                 MeshRenderer.enabled = false;
+                if (_meshCollider != null)
+                {
+                    _meshCollider.enabled = false;
+                }
             }
 
 
@@ -469,6 +494,7 @@ namespace Live2D.Cubism.Rendering
         /// <param name="newVertexPositions">Vertex positions to set.</param>
         internal void OnDrawableVertexPositionsDidChange(Vector3[] newVertexPositions)
         {
+
             var mesh = Mesh;
 
 
@@ -650,6 +676,25 @@ namespace Live2D.Cubism.Rendering
             }
         }
 
+		/// <summary>
+        /// Initializes the mesh collider.
+        /// </summary>
+        private void TryInitializeMeshCollider()
+        {
+            if (_meshCollider == null)
+            {
+                _meshCollider = GetComponent<MeshCollider>();
+
+
+                // Lazily add component.
+                if (_meshCollider == null)
+                {
+                    _meshCollider = gameObject.AddComponent<MeshCollider>();
+                    _meshCollider.sharedMesh = Meshes[FrontMesh];
+                }
+            }
+        }
+
 
         /// <summary>
         /// Initializes the mesh filter.
@@ -756,6 +801,10 @@ namespace Live2D.Cubism.Rendering
             TryInitializeMeshFilter();
 
             TryInitializeMesh();
+			
+			//High CPU Usage!
+            TryInitializeMeshCollider();
+            
             TryInitializeVertexColor();
             TryInitializeMainTexture();
 
